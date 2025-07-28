@@ -14,6 +14,7 @@ import {
   Home,
   LogOut,
 } from "lucide-react";
+import { setSearchTerm } from "@/redux/features/searchTerm/searchTermSlice";
 
 // NavBar Props Interface
 interface NavBarProps {
@@ -42,7 +43,7 @@ const NavBar: React.FC<NavBarProps> = ({
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const value = e.target.value;
     setSearchValue(value);
-    onSearch(value);
+    dispatch(setSearchTerm(value)); // Dispatch to Redux
   };
 
   // Toggle mobile menu

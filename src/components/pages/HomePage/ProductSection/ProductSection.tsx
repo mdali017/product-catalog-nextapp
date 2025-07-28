@@ -1,7 +1,8 @@
 "use client";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
 import { useGetAllProductsQuery } from "@/redux/services/productService/productApi";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 
 // Product interface - should match your API response
 interface Product {
@@ -17,26 +18,42 @@ interface Product {
   };
 }
 
-// API Response type
-interface ProductsApiResponse {
-  data?: Product[];
-  isLoading: boolean;
-  error?: any;
-}
-
 const ProductSection: React.FC = () => {
+  // Get search term from Redux
+  const searchTerm = useSelector((state: any) => state.searchTerm.searchTerm);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+
   //@ts-ignore
   const {
     data: allProducts,
     isLoading,
     error,
-  }: {
-    data: Product[] | undefined;
-    isLoading: boolean;
-    error: any;
   } = useGetAllProductsQuery(undefined);
 
-  console.log(allProducts);
+  // Update filtered products when search term or allProducts changes
+  // Update filtered products when search term or allProducts changes
+  useEffect(() => {
+    if (allProducts) {
+      if (searchTerm.trim() === "") {
+        setFilteredProducts(allProducts);
+      } else {
+        const filtered = allProducts.filter(
+          (product: any) =>
+            product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.description
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            product.category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredProducts(filtered);
+      }
+    }
+  }, [searchTerm, allProducts]);
+
+  // Handle search from NavBar
+  // const handleSearch = (value: string) => {
+  //   setSearchTerm(value);
+  // };
 
   // Handle add to cart function
   const handleAddToCart = (product: Product): void => {
@@ -73,7 +90,7 @@ const ProductSection: React.FC = () => {
     );
   }
 
-  // Empty state
+  // Empty state for no products at all
   if (!allProducts || allProducts.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -85,33 +102,45 @@ const ProductSection: React.FC = () => {
     );
   }
 
+  // Empty state for search results
+  if (searchTerm && filteredProducts.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        {/* Optional Section Title */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Search Results
+          </h2>
+          <p className="text-gray-600">No products found for "{searchTerm}"</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Optional Section Title */}
+      {/* Optional Section Title - Changes based on search */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Our Products</h2>
-        <p className="text-gray-600">Discover our amazing collection</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          {searchTerm ? `Search Results for "${searchTerm}"` : "Our Products"}
+        </h2>
+        <p className="text-gray-600">
+          {searchTerm
+            ? `${filteredProducts.length} products found`
+            : "Discover our amazing collection"}
+        </p>
       </div>
 
       {/* Products Grid - Fixed grid classes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {allProducts.map((product: Product) => (
+        {filteredProducts.map((product: Product) => (
           <ProductCard
-            key={product.id} // Use product.id instead of index for better React performance
+            key={product.id}
             product={product}
             onAddToCart={handleAddToCart}
           />
         ))}
       </div>
-
-      {/* Optional Load More Button */}
-      {/* {allProducts.length > 0 && (
-        <div className="text-center mt-8">
-          <button className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-md font-medium transition-colors">
-            Load More Products
-          </button>
-        </div>
-      )} */}
     </div>
   );
 };

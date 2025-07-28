@@ -2,6 +2,9 @@ import { configureStore } from "@reduxjs/toolkit";
 // import { baseApi } from "../baseApi/baseApi";
 // import authReducer from "../features/auth/authSlice";
 import authReducer from "@/redux/features/auth/authSlice";
+import productReducer from "@/redux/features/product/productSlice";
+import searchTermReducer from "@/redux/features/searchTerm/searchTermSlice"
+// import { productSlice } from "./features/product/productSlice";
 import { baseApi } from "./baseApi/baseApi";
 // import { authSlice } from "./features/auth/authSlice";
 
@@ -9,6 +12,9 @@ export const store = configureStore({
   reducer: {
     [baseApi.reducerPath]: baseApi.reducer,
     auth: authReducer,
+    product: productReducer,
+    searchTerm: searchTermReducer,
+
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
