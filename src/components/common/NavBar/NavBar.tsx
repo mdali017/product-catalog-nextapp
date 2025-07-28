@@ -25,13 +25,20 @@ interface NavBarProps {
 }
 
 const NavBar: React.FC<NavBarProps> = ({
-  cartItemsCount = 0,
+  // cartItemsCount = 0,
   favoritesCount = 0,
   onSearch = () => {},
   searchQuery = "",
 }) => {
   const router = useRouter();
   const dispatch = useDispatch();
+
+  const cartItemsCount = useSelector((state: any) =>
+    state.cart.items.reduce(
+      (total: number, item: any) => total + item.quantity,
+      0
+    )
+  );
 
   // Get auth state from Redux
   const { isAuthenticated, user } = useSelector((state: any) => state.auth);
@@ -147,8 +154,11 @@ const NavBar: React.FC<NavBarProps> = ({
               </button>
             )}
 
-            {isAuthenticated && (
-              <button className="relative flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            {/* {isAuthenticated && ( */}
+              <button
+                onClick={() => handleNavigation("/cart")}
+                className="relative flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
                 <ShoppingCart className="h-4 w-4" />
                 <span>Cart</span>
                 {cartItemsCount > 0 && (
@@ -157,7 +167,7 @@ const NavBar: React.FC<NavBarProps> = ({
                   </span>
                 )}
               </button>
-            )}
+            {/* // )} */}
 
             {/* User Info (if authenticated) */}
             {isAuthenticated && user && (

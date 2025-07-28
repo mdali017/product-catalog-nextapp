@@ -1,6 +1,8 @@
 import React from "react";
 import { ShoppingCart, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { addProductToCart } from "@/redux/features/cart/cartSlice";
 
 // Product interface based on your data structure
 interface Product {
@@ -24,6 +26,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
   const router = useRouter();
+  const dispatch = useDispatch();
 
   // Use product rating if available, otherwise use defaults
   const rating: number = product.rating?.rate ?? 4.2;
@@ -37,8 +40,45 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
   };
 
   // Handle add to cart click
-  const handleAddToCart = (): void => {
-    onAddToCart?.(product);
+  const handleAddToCart = async (): Promise<void> => {
+    try {
+      // Import SweetAlert dynamically (reduces initial bundle size)
+      const Swal = await import("sweetalert2");
+
+      // Dispatch the action to add product to cart
+      dispatch(
+        addProductToCart({
+          id: product.id,
+          title: product.title,
+          price: product.price,
+          image: product.image,
+          quantity: 1, // Changed from 0 to 1 since we're adding a new item
+        })
+      );
+
+      // Show success notification
+      Swal.default.fire({
+        position: "top-end",
+        icon: "success",
+        title: "Added to cart!",
+        text: `${product.title} has been added to your cart`,
+        showConfirmButton: false,
+        timer: 1500,
+        toast: true,
+        background: "#f0fdf4", // green-50
+        iconColor: "#16a34a", // green-600
+        timerProgressBar: true,
+      });
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+
+      const Swal = await import("sweetalert2");
+      Swal.default.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Something went wrong while adding to cart",
+      });
+    }
   };
 
   // Handle details navigation
