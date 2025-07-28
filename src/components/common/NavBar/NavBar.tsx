@@ -57,9 +57,30 @@ const NavBar: React.FC<NavBarProps> = ({
 
   // Handle logout - dispatch logout action
   const handleLogout = (): void => {
-    dispatch(logout());
-    router.push("/");
-    setIsMobileMenuOpen(false); // Close mobile menu after logout
+    import("sweetalert2").then((Swal) => {
+      Swal.default
+        .fire({
+          title: "Are you sure?",
+          text: "You will be logged out from the system",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Yes, logout!",
+        })
+        .then((result) => {
+          if (result.isConfirmed) {
+            dispatch(logout());
+            router.push("/");
+            setIsMobileMenuOpen(false);
+            Swal.default.fire(
+              "Logged out!",
+              "You have been successfully logged out.",
+              "success"
+            );
+          }
+        });
+    });
   };
 
   // Handle navigation
