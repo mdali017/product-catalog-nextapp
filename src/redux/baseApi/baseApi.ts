@@ -6,5 +6,5 @@ export const baseApi = createApi({
     baseUrl: "https://fakestoreapi.com",
   }),
   endpoints: () => ({}),
-  tagTypes: ["Products"],
+  tagTypes: ["Products", "Users"],
 });

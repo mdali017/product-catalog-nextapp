@@ -1,34 +1,57 @@
-"use client"
-import React, { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+"use client";
+import React, { useState, useEffect } from "react";
+import { Eye, EyeOff, User, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { useLoginMutation } from "@/redux/services/authService/authApi";
+import {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+} from "@/redux/features/auth/authSlice";
+// import { RootState } from '@/redux/store/store';
 
 interface LoginFormData {
-  email: string;
+  username: string;
   password: string;
 }
 
 const LoginPage: React.FC = () => {
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const { isAuthenticated, isLoading } = useSelector(
+    (state: any) => state.auth
+  );
+
   const [formData, setFormData] = useState<LoginFormData>({
-    email: '',
-    password: ''
+    username: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
+
+  const [login] = useLoginMutation();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/");
+    }
+  }, [isAuthenticated, router]);
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name as keyof LoginFormData]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -37,16 +60,12 @@ const LoginPage: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: Partial<LoginFormData> = {};
 
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+    if (!formData.username) {
+      newErrors.username = "Username is required";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password is required";
     }
 
     setErrors(newErrors);
@@ -54,27 +73,42 @@ const LoginPage: React.FC = () => {
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
-    setIsLoading(true);
-    
+    dispatch(loginStart());
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      console.log('Login attempt:', formData);
-      alert('Login successful!');
-      
-      // Reset form
-      setFormData({ email: '', password: '' });
-    } catch (error) {
-      console.error('Login failed:', error);
-      alert('Login failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+      const result = await login({
+        username: formData.username,
+        password: formData.password,
+      }).unwrap();
+
+      dispatch(
+        loginSuccess({
+          user: result.user,
+          token: result.token,
+        })
+      );
+
+      // Redirect to home page or intended page
+      router.push("/");
+    } catch (error: any) {
+      dispatch(loginFailure());
+
+      // Handle specific error messages
+      if (error.status === 401) {
+        setErrors({
+          username: "Invalid username or password",
+          password: "Invalid username or password",
+        });
+      } else {
+        setErrors({
+          username: "Login failed. Please try again.",
+        });
+      }
     }
   };
 
@@ -86,53 +120,63 @@ const LoginPage: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Welcome Back
           </h2>
-          <p className="text-gray-600">
-            Please sign in to your account
-          </p>
+          <p className="text-gray-600">Please sign in to your account</p>
         </div>
 
         {/* Login Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
           <div className="space-y-6">
-            {/* Email Field */}
+            {/* Username Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Username
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <User
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
+                  id="username"
+                  name="username"
+                  type="text"
+                  value={formData.username}
                   onChange={handleInputChange}
                   className={`w-full pl-10 pr-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
+                    errors.username ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="Enter your email"
+                  placeholder="Enter your username"
                 />
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              {errors.username && (
+                <p className="mt-1 text-sm text-red-600">{errors.username}</p>
               )}
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <Lock
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleInputChange}
                   className={`w-full pl-10 pr-12 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
+                    errors.password ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Enter your password"
                 />
@@ -149,38 +193,30 @@ const LoginPage: React.FC = () => {
               )}
             </div>
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                  Remember me
-                </label>
-              </div>
-              <button
-                type="button"
-                className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+            {/* Remember Me */}
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="remember-me"
+                className="ml-2 block text-sm text-gray-700"
               >
-                Forgot password?
-              </button>
+                Remember me
+              </label>
             </div>
 
             {/* Submit Button */}
             <button
-              onClick={(e) => {
-                e.preventDefault();
-                handleSubmit(e as any);
-              }}
+              onClick={handleSubmit}
               disabled={isLoading}
               className={`w-full py-3 px-4 rounded-md font-medium text-white transition-colors ${
                 isLoading
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               }`}
             >
               {isLoading ? (
@@ -189,29 +225,23 @@ const LoginPage: React.FC = () => {
                   <span>Signing in...</span>
                 </div>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </button>
-          </div>
-
-          {/* Sign Up Link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <button className="text-blue-600 hover:text-blue-500 font-medium">
-                Sign up here
-              </button>
-            </p>
           </div>
         </div>
 
         {/* Demo Credentials */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">Demo Credentials:</h3>
+          <h3 className="text-sm font-medium text-blue-800 mb-2">
+            Demo Credentials (FakeStore API):
+          </h3>
           <p className="text-sm text-blue-700">
-            Email: demo@example.com<br />
-            Password: password123
+            Username: mor_2314
+            <br />
+            Password: 83r5^_
           </p>
+          <p className="text-xs text-blue-600 mt-2">Or try: johnd / m38rmF$</p>
         </div>
       </div>
     </div>
